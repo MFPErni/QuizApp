@@ -7,6 +7,7 @@ namespace IntroBE.Entities
         public int AdminID { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        public string Category { get; set; }
 
         // Navigation properties
         public Admin Admin { get; set; }
