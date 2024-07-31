@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IntroBE.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20240729025344_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20240730082048_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -31,6 +31,14 @@ namespace IntroBE.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AdminID"));
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -70,6 +78,23 @@ namespace IntroBE.Migrations
                     b.ToTable("AnswerList");
                 });
 
+            modelBuilder.Entity("IntroBE.Entities.Category", b =>
+                {
+                    b.Property<int>("CategoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("CategoryID");
+
+                    b.ToTable("CategoryList");
+                });
+
             modelBuilder.Entity("IntroBE.Entities.Guest", b =>
                 {
                     b.Property<int>("GuestID")
@@ -77,6 +102,14 @@ namespace IntroBE.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GuestID"));
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -150,6 +183,9 @@ namespace IntroBE.Migrations
                     b.Property<int>("AdminID")
                         .HasColumnType("int");
 
+                    b.Property<int>("CategoryID")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -161,6 +197,8 @@ namespace IntroBE.Migrations
                     b.HasKey("QuizID");
 
                     b.HasIndex("AdminID");
+
+                    b.HasIndex("CategoryID");
 
                     b.ToTable("QuizList");
                 });
@@ -214,10 +252,23 @@ namespace IntroBE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("IntroBE.Entities.Category", "Category")
+                        .WithMany("Quizzes")
+                        .HasForeignKey("CategoryID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Admin");
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("IntroBE.Entities.Admin", b =>
+                {
+                    b.Navigation("Quizzes");
+                });
+
+            modelBuilder.Entity("IntroBE.Entities.Category", b =>
                 {
                     b.Navigation("Quizzes");
                 });

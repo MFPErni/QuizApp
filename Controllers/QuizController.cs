@@ -41,20 +41,6 @@ namespace IntroBE.Controllers
             return quiz;
         }
 
-        // GET: api/Quiz/5/questions
-        [HttpGet("{id}/questions")]
-        public async Task<ActionResult<IEnumerable<Question>>> GetQuestionsForQuiz(int id)
-        {
-            var quiz = await _context.QuizList.Include(q => q.Questions).FirstOrDefaultAsync(q => q.QuizID == id);
-
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-
-            return quiz.Questions.ToList();
-        }
-
         // POST: api/Quiz
         [HttpPost]
         public async Task<ActionResult<Quiz>> PostQuiz(Quiz quiz)
@@ -109,6 +95,38 @@ namespace IntroBE.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }        
+
+        // GET: api/Quiz/UniqueCategories
+        [HttpGet("UniqueCategories")]
+        public async Task<ActionResult<IEnumerable<Category>>> GetUniqueCategories()
+        {
+            var uniqueCategoryIDs = await _context.QuizList
+                                                  .Select(q => q.CategoryID)
+                                                  .Distinct()
+                                                  .ToListAsync();
+
+            var uniqueCategories = await _context.CategoryList
+                                                 .Where(c => uniqueCategoryIDs.Contains(c.CategoryID))
+                                                 .ToListAsync();
+
+            return Ok(uniqueCategories);
+        }
+
+        [HttpGet("ByCategory/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<string>>> GetQuizzesByCategory(int categoryId)
+        {
+            var quizTitles = await _context.QuizList
+                                           .Where(q => q.CategoryID == categoryId)
+                                           .Select(q => q.Title)
+                                           .ToListAsync();
+
+            if (quizTitles == null || !quizTitles.Any())
+            {
+                return NotFound($"No quizzes found for CategoryID {categoryId}");
+            }
+
+            return Ok(quizTitles);
         }
 
         private bool QuizExists(int id)

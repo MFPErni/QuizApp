@@ -75,6 +75,23 @@ namespace IntroBE.Migrations
                     b.ToTable("AnswerList");
                 });
 
+            modelBuilder.Entity("IntroBE.Entities.Category", b =>
+                {
+                    b.Property<int>("CategoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("CategoryID");
+
+                    b.ToTable("CategoryList");
+                });
+
             modelBuilder.Entity("IntroBE.Entities.Guest", b =>
                 {
                     b.Property<int>("GuestID")
@@ -163,9 +180,8 @@ namespace IntroBE.Migrations
                     b.Property<int>("AdminID")
                         .HasColumnType("int");
 
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("CategoryID")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -178,6 +194,8 @@ namespace IntroBE.Migrations
                     b.HasKey("QuizID");
 
                     b.HasIndex("AdminID");
+
+                    b.HasIndex("CategoryID");
 
                     b.ToTable("QuizList");
                 });
@@ -231,10 +249,23 @@ namespace IntroBE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("IntroBE.Entities.Category", "Category")
+                        .WithMany("Quizzes")
+                        .HasForeignKey("CategoryID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Admin");
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("IntroBE.Entities.Admin", b =>
+                {
+                    b.Navigation("Quizzes");
+                });
+
+            modelBuilder.Entity("IntroBE.Entities.Category", b =>
                 {
                     b.Navigation("Quizzes");
                 });
