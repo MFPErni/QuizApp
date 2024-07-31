@@ -1,4 +1,3 @@
-// Controllers/QuizController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IntroBE.Data;
@@ -19,83 +18,6 @@ namespace IntroBE.Controllers
         {
             _context = context;
         }
-
-        // GET: api/Quiz
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Quiz>>> GetQuizzes()
-        {
-            return await _context.QuizList.ToListAsync();
-        }
-
-        // GET: api/Quiz/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Quiz>> GetQuiz(int id)
-        {
-            var quiz = await _context.QuizList.FindAsync(id);
-
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-
-            return quiz;
-        }
-
-        // POST: api/Quiz
-        [HttpPost]
-        public async Task<ActionResult<Quiz>> PostQuiz(Quiz quiz)
-        {
-            _context.QuizList.Add(quiz);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetQuiz", new { id = quiz.QuizID }, quiz);
-        }
-
-        // PUT: api/Quiz/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutQuiz(int id, Quiz quiz)
-        {
-            if (id != quiz.QuizID)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(quiz).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!QuizExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // DELETE: api/Quiz/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteQuiz(int id)
-        {
-            var quiz = await _context.QuizList.FindAsync(id);
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-
-            _context.QuizList.Remove(quiz);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }        
 
         // GET: api/Quiz/UniqueCategories
         [HttpGet("UniqueCategories")]
@@ -127,6 +49,30 @@ namespace IntroBE.Controllers
             }
 
             return Ok(quizTitles);
+        }
+
+        
+
+        [HttpGet("ById/{id}")]
+        public async Task<ActionResult<object>> GetQuizById(int id)
+        {
+            var quiz = await _context.QuizList
+                                    .Include(q => q.Category) // Include related data
+                                    .FirstOrDefaultAsync(q => q.QuizID == id);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            var result = new
+            {
+                QuizTitle = quiz.Title,
+                QuizDescription = quiz.Description,
+                CategoryTitle = quiz.Category.Title
+            };
+
+            return Ok(result);
         }
 
         private bool QuizExists(int id)

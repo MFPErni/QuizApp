@@ -43,16 +43,23 @@ namespace IntroBE.Controllers
 
         // GET: api/Question/5/answers
         [HttpGet("{id}/answers")]
-        public async Task<ActionResult<IEnumerable<Answer>>> GetAnswersForQuestion(int id)
+        public async Task<ActionResult<IEnumerable<object>>> GetAnswersForQuestion(int id)
         {
-            var question = await _context.QuestionList.Include(q => q.Answers).FirstOrDefaultAsync(q => q.QuestionID == id);
+            var question = await _context.QuestionList
+                                        .Include(q => q.Answers)
+                                        .FirstOrDefaultAsync(q => q.QuestionID == id);
 
             if (question == null)
             {
                 return NotFound();
             }
 
-            return question.Answers.ToList();
+            var answers = question.Answers.Select(a => new {
+                a.AnswerText,
+                a.IsCorrect
+            }).ToList();
+
+            return Ok(answers);
         }
 
         // POST: api/Question
@@ -110,6 +117,7 @@ namespace IntroBE.Controllers
 
             return NoContent();
         }
+
 
         private bool QuestionExists(int id)
         {
