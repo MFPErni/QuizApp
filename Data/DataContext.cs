@@ -14,7 +14,7 @@ namespace IntroBE.Data
         public DbSet<Question> QuestionList { get; set; }
         public DbSet<Answer> AnswerList { get; set; }
         public DbSet<GuestQuizScore> GuestQuizScoreList { get; set; }
-        public DbSet<Category> CategoryList { get; set; } // Add this line
+        public DbSet<Category> CategoryList { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,7 +49,7 @@ namespace IntroBE.Data
             modelBuilder.Entity<Quiz>()
                 .HasOne(q => q.Category)
                 .WithMany(c => c.Quizzes)
-                .HasForeignKey(q => q.CategoryID); // Add this line
+                .HasForeignKey(q => q.CategoryID);
         }
     }
 }

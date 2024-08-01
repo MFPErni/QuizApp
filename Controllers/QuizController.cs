@@ -19,65 +19,45 @@ namespace IntroBE.Controllers
             _context = context;
         }
 
-        // GET: api/Quiz/UniqueCategories
-        [HttpGet("UniqueCategories")]
-        public async Task<ActionResult<IEnumerable<Category>>> GetUniqueCategories()
+        // HTTP GET method to get unique CategoryIDs from QuizList and their Titles from CategoryList
+        [HttpGet("categories")]
+        public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategories()
         {
-            var uniqueCategoryIDs = await _context.QuizList
-                                                  .Select(q => q.CategoryID)
-                                                  .Distinct()
-                                                  .ToListAsync();
+            // Get unique CategoryIDs from QuizList
+            var uniqueCategoryIds = await _context.QuizList
+                .Select(q => q.CategoryID)
+                .Distinct()
+                .ToListAsync();
 
-            var uniqueCategories = await _context.CategoryList
-                                                 .Where(c => uniqueCategoryIDs.Contains(c.CategoryID))
-                                                 .ToListAsync();
+            // Get Titles from CategoryList based on unique CategoryIDs
+            var categoryTitles = await _context.CategoryList
+                .Where(c => uniqueCategoryIds.Contains(c.CategoryID))
+                .Select(c => c.Title)
+                .ToListAsync();
 
-            return Ok(uniqueCategories);
+            return Ok(categoryTitles);
         }
 
-        [HttpGet("ByCategory/{categoryId}")]
-        public async Task<ActionResult<IEnumerable<string>>> GetQuizzesByCategory(int categoryId)
+        // HTTP GET method to list all quizzes associated with a specific CategoryID
+        [HttpGet("category/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetQuizzesByCategory(int categoryId)
         {
-            var quizTitles = await _context.QuizList
-                                           .Where(q => q.CategoryID == categoryId)
-                                           .Select(q => q.Title)
-                                           .ToListAsync();
+            var quizzes = await _context.QuizList
+                .Where(q => q.CategoryID == categoryId)
+                .Select(q => new
+                {
+                    q.Title,
+                    q.Description,
+                    CategoryTitle = q.Category.Title
+                })
+                .ToListAsync();
 
-            if (quizTitles == null || !quizTitles.Any())
+            if (quizzes == null || quizzes.Count == 0)
             {
                 return NotFound($"No quizzes found for CategoryID {categoryId}");
             }
 
-            return Ok(quizTitles);
-        }
-
-        
-
-        [HttpGet("ById/{id}")]
-        public async Task<ActionResult<object>> GetQuizById(int id)
-        {
-            var quiz = await _context.QuizList
-                                    .Include(q => q.Category) // Include related data
-                                    .FirstOrDefaultAsync(q => q.QuizID == id);
-
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-
-            var result = new
-            {
-                QuizTitle = quiz.Title,
-                QuizDescription = quiz.Description,
-                CategoryTitle = quiz.Category.Title
-            };
-
-            return Ok(result);
-        }
-
-        private bool QuizExists(int id)
-        {
-            return _context.QuizList.Any(e => e.QuizID == id);
+            return Ok(quizzes);
         }
     }
 }
