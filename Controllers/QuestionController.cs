@@ -19,18 +19,18 @@ namespace IntroBE.Controllers
             _context = context;
         }
 
-        // GET: api/question/quiz/title/{quizTitle}
-        [HttpGet("quiz/title/{quizTitle}")]
-        public async Task<ActionResult<IEnumerable<string>>> GetQuestionsByQuizTitle(string quizTitle)
+        // New method to get questions by quizID
+        [HttpGet("questions-by-quiz/{quizId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetQuestionsByQuiz(int quizId)
         {
             var questions = await _context.QuestionList
-                .Where(q => q.Quiz.Title == quizTitle)
-                .Select(q => q.QuestionText)
+                .Where(q => q.QuizID == quizId)
+                .Select(q => new { q.QuestionID, q.QuestionText })
                 .ToListAsync();
 
             if (questions == null || questions.Count == 0)
             {
-                return NotFound($"No questions found for QuizTitle {quizTitle}");
+                return NotFound($"No questions found for QuizID: {quizId}");
             }
 
             return Ok(questions);

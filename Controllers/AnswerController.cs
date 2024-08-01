@@ -19,48 +19,27 @@ namespace IntroBE.Controllers
             _context = context;
         }
 
-        // GET: api/answer/question/{questionText}
-        [HttpGet("question/{questionText}")]
-        public async Task<ActionResult<IEnumerable<string>>> GetAnswersByQuestionText(string questionText)
+        // New method to get answers by questionID
+        [HttpGet("answers-by-question/{questionId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetAnswersByQuestion(int questionId)
         {
-            // Find the question by questionText
-            var question = await _context.QuestionList
-                .FirstOrDefaultAsync(q => q.QuestionText == questionText);
-
-            if (question == null)
-            {
-                return NotFound($"No question found with text: {questionText}");
-            }
-
-            // Get the answers associated with the question and select only the answerText
-            var answerTexts = await _context.AnswerList
-                .Where(a => a.QuestionID == question.QuestionID)
-                .Select(a => a.AnswerText)
+            var answers = await _context.AnswerList
+                .Where(a => a.QuestionID == questionId)
+                .Select(a => new
+                {
+                    a.AnswerID,
+                    a.QuestionID,
+                    a.AnswerText,
+                    a.IsCorrect
+                })
                 .ToListAsync();
 
-            if (answerTexts == null || answerTexts.Count == 0)
+            if (answers == null || answers.Count == 0)
             {
-                return NotFound($"No answers found for question: {questionText}");
+                return NotFound($"No answers found for QuestionID: {questionId}");
             }
 
-            return Ok(answerTexts);
-        }
-
-        // GET: api/answer/check/{answerText}
-        [HttpGet("check/{answerText}")]
-        public async Task<ActionResult<object>> CheckAnswerText(string answerText)
-        {
-            // Find the answer by answerText
-            var answer = await _context.AnswerList
-                .FirstOrDefaultAsync(a => a.AnswerText == answerText);
-
-            if (answer == null)
-            {
-                return NotFound($"No answer found with text: {answerText}");
-            }
-
-            // Return the answerText and isCorrect value
-            return Ok(new { answer.AnswerText, answer.IsCorrect });
+            return Ok(answers);
         }
     }
 }

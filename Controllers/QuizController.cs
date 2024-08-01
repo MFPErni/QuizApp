@@ -19,43 +19,37 @@ namespace IntroBE.Controllers
             _context = context;
         }
 
-        // HTTP GET method to get unique CategoryIDs from QuizList and their Titles from CategoryList
+        // Existing method to get unique category titles
         [HttpGet("categories")]
-        public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategories()
+        public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategoryTitles()
         {
-            // Get unique CategoryIDs from QuizList
             var uniqueCategoryIds = await _context.QuizList
                 .Select(q => q.CategoryID)
                 .Distinct()
                 .ToListAsync();
 
-            // Get Titles from CategoryList based on unique CategoryIDs
             var categoryTitles = await _context.CategoryList
                 .Where(c => uniqueCategoryIds.Contains(c.CategoryID))
                 .Select(c => c.Title)
                 .ToListAsync();
 
-            return Ok(categoryTitles);
+            return categoryTitles; // Return the list directly
         }
 
-        // HTTP GET method to list all quizzes associated with a specific CategoryID
-        [HttpGet("category/{categoryId}")]
+        // New method to get quizzes by category
+        [HttpGet("quizzes-by-category/{categoryId}")]
         public async Task<ActionResult<IEnumerable<object>>> GetQuizzesByCategory(int categoryId)
         {
             var quizzes = await _context.QuizList
                 .Where(q => q.CategoryID == categoryId)
                 .Select(q => new
                 {
+                    q.QuizID,
                     q.Title,
                     q.Description,
                     CategoryTitle = q.Category.Title
                 })
                 .ToListAsync();
-
-            if (quizzes == null || quizzes.Count == 0)
-            {
-                return NotFound($"No quizzes found for CategoryID {categoryId}");
-            }
 
             return Ok(quizzes);
         }
