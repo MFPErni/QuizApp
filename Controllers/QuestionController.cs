@@ -1,4 +1,3 @@
-// Controllers/QuestionController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IntroBE.Data;
@@ -18,6 +17,23 @@ namespace IntroBE.Controllers
         public QuestionController(DataContext context)
         {
             _context = context;
+        }
+
+        // GET: api/question/quiz/title/{quizTitle}
+        [HttpGet("quiz/title/{quizTitle}")]
+        public async Task<ActionResult<IEnumerable<string>>> GetQuestionsByQuizTitle(string quizTitle)
+        {
+            var questions = await _context.QuestionList
+                .Where(q => q.Quiz.Title == quizTitle)
+                .Select(q => q.QuestionText)
+                .ToListAsync();
+
+            if (questions == null || questions.Count == 0)
+            {
+                return NotFound($"No questions found for QuizTitle {quizTitle}");
+            }
+
+            return Ok(questions);
         }
     }
 }
