@@ -1,4 +1,3 @@
-// Controllers/QuestionController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IntroBE.Data;
@@ -20,100 +19,21 @@ namespace IntroBE.Controllers
             _context = context;
         }
 
-        // GET: api/Question
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Question>>> GetQuestions()
+        // New method to get questions by quizID
+        [HttpGet("questions-by-quiz/{quizId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetQuestionsByQuiz(int quizId)
         {
-            return await _context.QuestionList.ToListAsync();
-        }
+            var questions = await _context.QuestionList
+                .Where(q => q.QuizID == quizId)
+                .Select(q => new { q.QuestionID, q.QuestionText })
+                .ToListAsync();
 
-        // GET: api/Question/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Question>> GetQuestion(int id)
-        {
-            var question = await _context.QuestionList.FindAsync(id);
-
-            if (question == null)
+            if (questions == null || questions.Count == 0)
             {
-                return NotFound();
+                return NotFound($"No questions found for QuizID: {quizId}");
             }
 
-            return question;
-        }
-
-        // GET: api/Question/5/answers
-        [HttpGet("{id}/answers")]
-        public async Task<ActionResult<IEnumerable<Answer>>> GetAnswersForQuestion(int id)
-        {
-            var question = await _context.QuestionList.Include(q => q.Answers).FirstOrDefaultAsync(q => q.QuestionID == id);
-
-            if (question == null)
-            {
-                return NotFound();
-            }
-
-            return question.Answers.ToList();
-        }
-
-        // POST: api/Question
-        [HttpPost]
-        public async Task<ActionResult<Question>> PostQuestion(Question question)
-        {
-            _context.QuestionList.Add(question);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetQuestion", new { id = question.QuestionID }, question);
-        }
-
-        // PUT: api/Question/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutQuestion(int id, Question question)
-        {
-            if (id != question.QuestionID)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(question).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!QuestionExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // DELETE: api/Question/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteQuestion(int id)
-        {
-            var question = await _context.QuestionList.FindAsync(id);
-            if (question == null)
-            {
-                return NotFound();
-            }
-
-            _context.QuestionList.Remove(question);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool QuestionExists(int id)
-        {
-            return _context.QuestionList.Any(e => e.QuestionID == id);
+            return Ok(questions);
         }
     }
 }
