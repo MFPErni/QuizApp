@@ -9,11 +9,9 @@ namespace IntroBE.Data
         public DataContext(DbContextOptions<DataContext> options) : base(options) { }
 
         public DbSet<Admin> AdminList { get; set; }
-        public DbSet<Guest> GuestList { get; set; }
         public DbSet<Quiz> QuizList { get; set; }
         public DbSet<Question> QuestionList { get; set; }
         public DbSet<Answer> AnswerList { get; set; }
-        public DbSet<GuestQuizScore> GuestQuizScoreList { get; set; }
         public DbSet<Category> CategoryList { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,16 +33,6 @@ namespace IntroBE.Data
                 .HasOne(a => a.Question)
                 .WithMany(q => q.Answers)
                 .HasForeignKey(a => a.QuestionID);
-
-            modelBuilder.Entity<GuestQuizScore>()
-                .HasOne(gqs => gqs.Guest)
-                .WithMany(g => g.GuestQuizScores)
-                .HasForeignKey(gqs => gqs.GuestID);
-
-            modelBuilder.Entity<GuestQuizScore>()
-                .HasOne(gqs => gqs.Quiz)
-                .WithMany(q => q.GuestQuizScores)
-                .HasForeignKey(gqs => gqs.QuizID);
 
             modelBuilder.Entity<Quiz>()
                 .HasOne(q => q.Category)

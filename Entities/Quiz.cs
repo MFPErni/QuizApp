@@ -13,6 +13,5 @@ namespace IntroBE.Entities
         public Admin Admin { get; set; }
         public Category Category { get; set; } // Add this line
         public ICollection<Question> Questions { get; set; }
-        public ICollection<GuestQuizScore> GuestQuizScores { get; set; }
     }
 }
