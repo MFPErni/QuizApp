@@ -19,5 +19,16 @@ namespace IntroBE.Controllers
         {
             _context = context;
         }
+
+        // Method to get all category titles
+        [HttpGet("titles")]
+        public async Task<ActionResult<IEnumerable<string>>> GetCategoryTitles()
+        {
+            var categoryTitles = await _context.CategoryList
+                .Select(c => c.Title)
+                .ToListAsync();
+
+            return Ok(categoryTitles);
+        }
     }
 }

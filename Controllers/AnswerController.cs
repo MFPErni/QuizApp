@@ -41,5 +41,22 @@ namespace IntroBE.Controllers
 
             return Ok(answers);
         }
+
+        // New method to delete an answer by answerID
+        [HttpDelete("{answerId}")]
+        public async Task<IActionResult> DeleteAnswer(int answerId)
+        {
+            var answer = await _context.AnswerList.FindAsync(answerId);
+
+            if (answer == null)
+            {
+                return NotFound("Answer not found");
+            }
+
+            _context.AnswerList.Remove(answer);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

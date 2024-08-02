@@ -35,5 +35,22 @@ namespace IntroBE.Controllers
 
             return Ok(questions);
         }
+
+        // New method to delete a question by questionID
+        [HttpDelete("{questionId}")]
+        public async Task<IActionResult> DeleteQuestion(int questionId)
+        {
+            var question = await _context.QuestionList.FindAsync(questionId);
+
+            if (question == null)
+            {
+                return NotFound("Question not found");
+            }
+
+            _context.QuestionList.Remove(question);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

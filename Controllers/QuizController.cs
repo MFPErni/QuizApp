@@ -128,5 +128,22 @@ namespace IntroBE.Controllers
 
             return NoContent();
         }
+
+        // New method to delete a quiz by quizID
+        [HttpDelete("{quizId}")]
+        public async Task<IActionResult> DeleteQuiz(int quizId)
+        {
+            var quiz = await _context.QuizList.FindAsync(quizId);
+
+            if (quiz == null)
+            {
+                return NotFound("Quiz not found");
+            }
+
+            _context.QuizList.Remove(quiz);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }
