@@ -1,4 +1,3 @@
-// Entities/Admin.cs
 namespace IntroBE.Entities
 {
     public class Admin
@@ -10,6 +9,6 @@ namespace IntroBE.Entities
         public string LastName { get; set; }
 
         // Navigation property
-        public ICollection<Quiz> Quizzes { get; set; }
+        public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); // Initialize as an empty list
     }
 }

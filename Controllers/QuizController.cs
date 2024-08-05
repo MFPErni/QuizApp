@@ -79,40 +79,19 @@ namespace IntroBE.Controllers
             return Ok(quizzes);
         }
 
-        // New method to get a quiz by ID
-        [HttpGet("{quizId}")]
-        public async Task<ActionResult<object>> GetQuizById(int quizId)
-        {
-            var quiz = await _context.QuizList
-                .Where(q => q.QuizID == quizId)
-                .Select(q => new
-                {
-                    q.QuizID,
-                    q.AdminID,
-                    q.Title,
-                    q.Description,
-                    q.CategoryID
-                })
-                .FirstOrDefaultAsync();
-
-            if (quiz == null)
-            {
-                return NotFound("Quiz not found");
-            }
-
-            return Ok(quiz);
-        }
-
         // New method to update a quiz
         [HttpPut("update-quiz/{quizId}")]
-        public async Task<IActionResult> UpdateQuiz(int quizId, [FromBody] Quiz updatedQuiz)
+        public async Task<IActionResult> UpdateQuiz(int quizId, [FromBody] QuizUpdateDto updatedQuiz)
         {
             if (quizId != updatedQuiz.QuizID)
             {
                 return BadRequest("Quiz ID mismatch");
             }
 
-            var quiz = await _context.QuizList.FindAsync(quizId);
+            var quiz = await _context.QuizList
+                .Include(q => q.Questions)
+                .ThenInclude(q => q.Answers)
+                .FirstOrDefaultAsync(q => q.QuizID == quizId);
 
             if (quiz == null)
             {
@@ -122,6 +101,26 @@ namespace IntroBE.Controllers
             quiz.Title = updatedQuiz.Title;
             quiz.Description = updatedQuiz.Description;
             quiz.CategoryID = updatedQuiz.CategoryID;
+
+            // Update questions and answers
+            foreach (var questionDto in updatedQuiz.Questions)
+            {
+                var question = quiz.Questions.FirstOrDefault(q => q.QuestionID == questionDto.QuestionID);
+                if (question != null)
+                {
+                    question.QuestionText = questionDto.QuestionText;
+
+                    foreach (var answerDto in questionDto.Answers)
+                    {
+                        var answer = question.Answers.FirstOrDefault(a => a.AnswerID == answerDto.AnswerID);
+                        if (answer != null)
+                        {
+                            answer.AnswerText = answerDto.AnswerText;
+                            answer.IsCorrect = answerDto.IsCorrect;
+                        }
+                    }
+                }
+            }
 
             _context.Entry(quiz).State = EntityState.Modified;
             await _context.SaveChangesAsync();
@@ -161,5 +160,127 @@ namespace IntroBE.Controllers
 
             return Ok(quizTitles);
         }
+
+        [HttpPost]
+        public async Task<ActionResult<Quiz>> CreateQuiz([FromBody] QuizCreateDto quizDto)
+        {
+            var quiz = new Quiz
+            {
+                AdminID = quizDto.AdminID,
+                Title = quizDto.Title,
+                Description = quizDto.Description,
+                CategoryID = quizDto.CategoryID,
+                Questions = quizDto.Questions.Select(q => new Question
+                {
+                    QuestionText = q.QuestionText,
+                    Answers = q.Answers.Select(a => new Answer
+                    {
+                        AnswerText = a.AnswerText,
+                        IsCorrect = a.IsCorrect
+                    }).ToList()
+                }).ToList()
+            };
+
+            _context.QuizList.Add(quiz);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetQuizById", new { quizId = quiz.QuizID }, quiz);
+        }
+
+        [HttpPut("{quizId}")]
+        public async Task<IActionResult> UpdateQuiz(int quizId, [FromBody] QuizCreateDto quizDto)
+        {
+            var quiz = await _context.QuizList.Include(q => q.Questions).ThenInclude(q => q.Answers).FirstOrDefaultAsync(q => q.QuizID == quizId);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            quiz.AdminID = quizDto.AdminID;
+            quiz.Title = quizDto.Title;
+            quiz.Description = quizDto.Description;
+            quiz.CategoryID = quizDto.CategoryID;
+
+            // Remove existing questions and answers
+            _context.QuestionList.RemoveRange(quiz.Questions);
+            _context.AnswerList.RemoveRange(quiz.Questions.SelectMany(q => q.Answers));
+
+            // Add updated questions and answers
+            quiz.Questions = quizDto.Questions.Select(q => new Question
+            {
+                QuestionText = q.QuestionText,
+                Answers = q.Answers.Select(a => new Answer
+                {
+                    AnswerText = a.AnswerText,
+                    IsCorrect = a.IsCorrect
+                }).ToList()
+            }).ToList();
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpGet("{quizId}")]
+        public async Task<ActionResult<Quiz>> GetQuizById(int quizId)
+        {
+            var quiz = await _context.QuizList
+                .Include(q => q.Questions)
+                .ThenInclude(q => q.Answers)
+                .FirstOrDefaultAsync(q => q.QuizID == quizId);
+
+            if (quiz == null)
+            {
+                return NotFound("Quiz not found");
+            }
+
+            return Ok(quiz);
+        }
+    }
+
+    public class QuizUpdateDto
+    {
+        public int QuizID { get; set; }
+        public int AdminID { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int CategoryID { get; set; }
+        public List<QuestionUpdateDto> Questions { get; set; }
+    }
+
+    public class QuestionUpdateDto
+    {
+        public int QuestionID { get; set; }
+        public string QuestionText { get; set; }
+        public List<AnswerUpdateDto> Answers { get; set; }
+    }
+
+    public class AnswerUpdateDto
+    {
+        public int AnswerID { get; set; }
+        public string AnswerText { get; set; }
+        public bool IsCorrect { get; set; }
+    }
+
+    public class QuizCreateDto
+    {
+        public int AdminID { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int CategoryID { get; set; }
+        public List<QuestionCreateDto> Questions { get; set; }
+    }
+
+    public class QuestionCreateDto
+    {
+        public string QuestionText { get; set; }
+        public List<AnswerCreateDto> Answers { get; set; }
+    }
+
+    public class AnswerCreateDto
+    {
+        public string AnswerText { get; set; }
+        public bool IsCorrect { get; set; }
     }
 }
