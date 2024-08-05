@@ -81,13 +81,8 @@ namespace IntroBE.Controllers
 
         // New method to update a quiz
         [HttpPut("update-quiz/{quizId}")]
-        public async Task<IActionResult> UpdateQuiz(int quizId, [FromBody] QuizUpdateDto updatedQuiz)
+        public async Task<IActionResult> UpdateQuiz(int quizId, [FromBody] QuizCreateDto quizDto)
         {
-            if (quizId != updatedQuiz.QuizID)
-            {
-                return BadRequest("Quiz ID mismatch");
-            }
-
             var quiz = await _context.QuizList
                 .Include(q => q.Questions)
                 .ThenInclude(q => q.Answers)
@@ -95,34 +90,77 @@ namespace IntroBE.Controllers
 
             if (quiz == null)
             {
-                return NotFound("Quiz not found");
+                return NotFound();
             }
 
-            quiz.Title = updatedQuiz.Title;
-            quiz.Description = updatedQuiz.Description;
-            quiz.CategoryID = updatedQuiz.CategoryID;
+            quiz.AdminID = quizDto.AdminID;
+            quiz.Title = quizDto.Title;
+            quiz.Description = quizDto.Description;
+            quiz.CategoryID = quizDto.CategoryID;
 
-            // Update questions and answers
-            foreach (var questionDto in updatedQuiz.Questions)
+            // Update existing questions and answers, and add new ones
+            foreach (var questionDto in quizDto.Questions)
             {
                 var question = quiz.Questions.FirstOrDefault(q => q.QuestionID == questionDto.QuestionID);
+
                 if (question != null)
                 {
+                    // Update existing question
                     question.QuestionText = questionDto.QuestionText;
 
+                    // Update existing answers and add new ones
                     foreach (var answerDto in questionDto.Answers)
                     {
                         var answer = question.Answers.FirstOrDefault(a => a.AnswerID == answerDto.AnswerID);
+
                         if (answer != null)
                         {
+                            // Update existing answer
                             answer.AnswerText = answerDto.AnswerText;
                             answer.IsCorrect = answerDto.IsCorrect;
                         }
+                        else
+                        {
+                            // Add new answer
+                            question.Answers.Add(new Answer
+                            {
+                                AnswerText = answerDto.AnswerText,
+                                IsCorrect = answerDto.IsCorrect
+                            });
+                        }
                     }
+
+                    // Remove answers that are not in the DTO
+                    var answerIdsToRemove = question.Answers
+                        .Where(a => !questionDto.Answers.Any(adto => adto.AnswerID == a.AnswerID))
+                        .Select(a => a.AnswerID)
+                        .ToList();
+
+                    question.Answers = question.Answers.Where(a => !answerIdsToRemove.Contains(a.AnswerID)).ToList();
+                }
+                else
+                {
+                    // Add new question with answers
+                    quiz.Questions.Add(new Question
+                    {
+                        QuestionText = questionDto.QuestionText,
+                        Answers = questionDto.Answers.Select(a => new Answer
+                        {
+                            AnswerText = a.AnswerText,
+                            IsCorrect = a.IsCorrect
+                        }).ToList()
+                    });
                 }
             }
 
-            _context.Entry(quiz).State = EntityState.Modified;
+            // Remove questions that are not in the DTO
+            var questionIdsToRemove = quiz.Questions
+                .Where(q => !quizDto.Questions.Any(qdto => qdto.QuestionID == q.QuestionID))
+                .Select(q => q.QuestionID)
+                .ToList();
+
+            quiz.Questions = quiz.Questions.Where(q => !questionIdsToRemove.Contains(q.QuestionID)).ToList();
+
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -187,41 +225,6 @@ namespace IntroBE.Controllers
             return CreatedAtAction("GetQuizById", new { quizId = quiz.QuizID }, quiz);
         }
 
-        [HttpPut("{quizId}")]
-        public async Task<IActionResult> UpdateQuiz(int quizId, [FromBody] QuizCreateDto quizDto)
-        {
-            var quiz = await _context.QuizList.Include(q => q.Questions).ThenInclude(q => q.Answers).FirstOrDefaultAsync(q => q.QuizID == quizId);
-
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-
-            quiz.AdminID = quizDto.AdminID;
-            quiz.Title = quizDto.Title;
-            quiz.Description = quizDto.Description;
-            quiz.CategoryID = quizDto.CategoryID;
-
-            // Remove existing questions and answers
-            _context.QuestionList.RemoveRange(quiz.Questions);
-            _context.AnswerList.RemoveRange(quiz.Questions.SelectMany(q => q.Answers));
-
-            // Add updated questions and answers
-            quiz.Questions = quizDto.Questions.Select(q => new Question
-            {
-                QuestionText = q.QuestionText,
-                Answers = q.Answers.Select(a => new Answer
-                {
-                    AnswerText = a.AnswerText,
-                    IsCorrect = a.IsCorrect
-                }).ToList()
-            }).ToList();
-
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
         [HttpGet("{quizId}")]
         public async Task<ActionResult<Quiz>> GetQuizById(int quizId)
         {
@@ -239,30 +242,7 @@ namespace IntroBE.Controllers
         }
     }
 
-    public class QuizUpdateDto
-    {
-        public int QuizID { get; set; }
-        public int AdminID { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public int CategoryID { get; set; }
-        public List<QuestionUpdateDto> Questions { get; set; }
-    }
-
-    public class QuestionUpdateDto
-    {
-        public int QuestionID { get; set; }
-        public string QuestionText { get; set; }
-        public List<AnswerUpdateDto> Answers { get; set; }
-    }
-
-    public class AnswerUpdateDto
-    {
-        public int AnswerID { get; set; }
-        public string AnswerText { get; set; }
-        public bool IsCorrect { get; set; }
-    }
-
+    // DTOs
     public class QuizCreateDto
     {
         public int AdminID { get; set; }
@@ -274,12 +254,14 @@ namespace IntroBE.Controllers
 
     public class QuestionCreateDto
     {
+        public int QuestionID { get; set; } // Add this line
         public string QuestionText { get; set; }
         public List<AnswerCreateDto> Answers { get; set; }
     }
 
     public class AnswerCreateDto
     {
+        public int AnswerID { get; set; } // Add this line
         public string AnswerText { get; set; }
         public bool IsCorrect { get; set; }
     }
