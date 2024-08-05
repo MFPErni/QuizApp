@@ -1,4 +1,3 @@
-// Controllers/CategoryController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IntroBE.Data;
@@ -20,7 +19,7 @@ namespace IntroBE.Controllers
             _context = context;
         }
 
-        // Method to get all category titles
+        // Existing method to get all category titles
         [HttpGet("titles")]
         public async Task<ActionResult<IEnumerable<string>>> GetCategoryTitles()
         {
@@ -29,6 +28,23 @@ namespace IntroBE.Controllers
                 .ToListAsync();
 
             return Ok(categoryTitles);
+        }
+
+        // New method to get CategoryID by category title
+        [HttpGet("category-id")]
+        public async Task<ActionResult<int>> GetCategoryIdByTitle([FromQuery] string title)
+        {
+            var category = await _context.CategoryList
+                .Where(c => c.Title == title)
+                .Select(c => c.CategoryID)
+                .FirstOrDefaultAsync();
+
+            if (category == 0)
+            {
+                return NotFound("Category not found");
+            }
+
+            return Ok(category);
         }
     }
 }

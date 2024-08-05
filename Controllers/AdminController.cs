@@ -66,29 +66,29 @@ namespace IntroBE.Controllers
 
         // New method to create a new admin
         [HttpPost("create-admin")]
-        public async Task<ActionResult<Admin>> CreateAdmin([FromBody] AdminCreateRequest request)
+        public async Task<ActionResult<Admin>> CreateAdmin([FromBody] Admin newAdmin)
         {
             // Check if the username already exists
-            var exists = await _context.AdminList.AnyAsync(a => a.Username == request.Username);
+            var exists = await _context.AdminList.AnyAsync(a => a.Username == newAdmin.Username);
             if (exists)
             {
                 return BadRequest("Username already exists");
             }
 
             // Create a new admin entity
-            var newAdmin = new Admin
+            var admin = new Admin
             {
-                Username = request.Username,
-                Password = request.Password,
-                FirstName = request.FirstName,
-                LastName = request.LastName
+                Username = newAdmin.Username,
+                Password = newAdmin.Password,
+                FirstName = newAdmin.FirstName,
+                LastName = newAdmin.LastName
             };
 
             // Add the new admin to the database
-            _context.AdminList.Add(newAdmin);
+            _context.AdminList.Add(admin);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetAdminById), new { id = newAdmin.AdminID }, newAdmin);
+            return CreatedAtAction(nameof(GetAdminById), new { id = admin.AdminID }, admin);
         }
 
         // Method to get an admin by ID (for CreatedAtAction)
@@ -104,13 +104,19 @@ namespace IntroBE.Controllers
             return admin;
         }
 
-        // Request model for creating an admin
-        public class AdminCreateRequest
+        // New method to get admin ID by username
+        [HttpGet("get-admin-id")]
+        public async Task<ActionResult<int>> GetAdminIdByUsername([FromQuery] string username)
         {
-            public string Username { get; set; }
-            public string Password { get; set; }
-            public string FirstName { get; set; }
-            public string LastName { get; set; }
+            var admin = await _context.AdminList
+                .FirstOrDefaultAsync(a => a.Username == username);
+
+            if (admin == null)
+            {
+                return NotFound("Username doesn't exist");
+            }
+
+            return Ok(admin.AdminID);
         }
     }
 }

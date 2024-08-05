@@ -145,5 +145,21 @@ namespace IntroBE.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("quiz-titles-by-category/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<string>>> GetQuizTitlesByCategory(int categoryId)
+        {
+            var quizTitles = await _context.QuizList
+                .Where(q => q.CategoryID == categoryId)
+                .Select(q => q.Title)
+                .ToListAsync();
+
+            if (quizTitles == null || quizTitles.Count == 0)
+            {
+                return NotFound("No quizzes found for the given category ID");
+            }
+
+            return Ok(quizTitles);
+        }
     }
 }
